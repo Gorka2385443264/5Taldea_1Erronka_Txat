@@ -4,16 +4,16 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
-
+import java.util.Scanner;
 
 public class clients {
-	private DataInputStream in;
+    private DataInputStream in;
     private DataOutputStream out;
     private Socket socket;
 
-	public int portNumber = 8080;
+    public int portNumber = 5555;
 
-	public void createClient() {
+    public void createClient() {
         try {
             // Conectarse al servidor
             socket = new Socket("localhost", portNumber);
@@ -37,6 +37,17 @@ public class clients {
                     }
                 }
             }).start();
+
+            // Hilo para enviar mensajes al servidor
+            new Thread(() -> {
+                Scanner scanner = new Scanner(System.in);
+                while (!socket.isClosed()) {
+                    String message = scanner.nextLine();
+                    sendMessage(message);
+                }
+                scanner.close();
+            }).start();
+
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -47,6 +58,7 @@ public class clients {
             if (out != null) {
                 out.writeUTF(message);
                 out.flush();
+                System.out.println("CLIENT > Sent: " + message);
             }
         } catch (IOException e) {
             System.out.println("CLIENT > Error sending message");

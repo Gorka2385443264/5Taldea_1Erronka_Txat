@@ -8,7 +8,7 @@ import java.net.Socket;
 public class ClientThread implements Runnable {
 
     private Socket socket;
-    private Server server; // Si renombraste la clase, cámbialo a "Server"
+    private Server server;
     private String clientName;
 
     public String getClientName() {
@@ -27,49 +27,42 @@ public class ClientThread implements Runnable {
         this.socket = socket;
     }
 
-    public ClientThread(Server server, Socket socket) { // Ajusta si renombraste a "Server"
+    public ClientThread(Server server, Socket socket) {
         this.server = server;
         this.socket = socket;
     }
 
     @Override
     public void run() {
-        try (DataInputStream in = new DataInputStream(socket.getInputStream());
-             DataOutputStream out = new DataOutputStream(socket.getOutputStream())) {
+        try {
+            DataInputStream in = new DataInputStream(socket.getInputStream());
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
             out.writeUTF("HI FROM SERVER");
-            System.out.println("SERVER > Sent greeting to client");
 
             while (!socket.isClosed()) {
                 try {
                     if (in.available() > 0) {
                         String input = in.readUTF();
-                        System.out.println("SERVER > Received: " + input);
+                        System.out.println("SERVER > " + input);
 
-                        // Broadcast message to all clients
+                        // Enviar el mensaje a todos los clientes conectados
                         for (ClientThread thatClient : server.getClients()) {
-                            if (thatClient != this) { // Opcional: no enviar al cliente que lo envió
-                                DataOutputStream clientOut = new DataOutputStream(thatClient.getSocket().getOutputStream());
-                                clientOut.writeUTF(input);
-                            }
+                            DataOutputStream outputParticularClient = new DataOutputStream(thatClient.getSocket().getOutputStream());
+                            outputParticularClient.writeUTF(input + " GOT FROM SERVER");
                         }
                     }
                 } catch (IOException e) {
-                    System.out.println("SERVER > Error in client communication");
-                    break;
+                    e.printStackTrace();
                 }
             }
         } catch (IOException e) {
-            System.out.println("SERVER > Client disconnected: " + socket.getRemoteSocketAddress());
+            e.printStackTrace();
         } finally {
             try {
-                server.getClients().remove(this);
-                if (socket != null && !socket.isClosed()) {
-                    socket.close();
-                }
-                System.out.println("SERVER > Connection closed for client: " + socket.getRemoteSocketAddress());
-            } catch (IOException ex) {
-                ex.printStackTrace();
+                socket.close();
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }

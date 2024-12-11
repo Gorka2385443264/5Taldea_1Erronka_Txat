@@ -12,8 +12,9 @@ public class TestClient {
 
         // Enviar mensajes entre clientes
         while(true) {
-        	String mensaje = sc.next();
-        	client1.sendMessage(mensaje);
+        	//String mensaje = sc.next();
+        	client1.sendMessage("kaixo");
+        	break;
         }
     }
 }
