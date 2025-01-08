@@ -9,38 +9,35 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Server {
-    int port = 5555;
-    private List<ClientThread> clients;
+    int portNumber = 5555;
+    private Socket socket;
+    private List<ClientThread> clientThreads = new ArrayList<>();
 
-    public List<ClientThread> getClients(){
-        return clients;
+    public List<ClientThread> getClients() {
+        return clientThreads;
     }
 
-    public void startServer(){
-        clients = new ArrayList<ClientThread>();
-        try {
-            ServerSocket serverSocket = new ServerSocket(port);
-            System.out.println("SERVER ON\nPORT:"+port);
-            System.out.println("SERVER > Waiting for connections...");
+    public void startServer() {
+        try (ServerSocket serverSocket = new ServerSocket(portNumber)) {
+            System.out.println("SERVER > Listening on port " + portNumber);
 
             while (true) {
-                try {
-                	int num = 0;
-                    Socket socket = serverSocket.accept();
-                    System.out.println("SERVER > New connection: " + socket.getRemoteSocketAddress());
-                    ClientThread client = new ClientThread(this, socket,String.valueOf(num));
-                    num++;
-                    Thread thread = new Thread(client);
-                    thread.start();
-                    clients.add(client);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    System.out.println("SERVER > Accept failed");
-                }
-            }
+                // Acepta la conexión de un cliente
+                socket = serverSocket.accept();
+                System.out.println("SERVER > New client connected: " + socket.getInetAddress());
 
+                // Crear un hilo para manejar la comunicación con este cliente
+                ClientThread clientThread = new ClientThread(socket, clientThreads);
+                clientThreads.add(clientThread);
+                new Thread(clientThread).start();
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void main(String[] args) {
+        Server server = new Server();
+        server.startServer();
     }
 }

@@ -5,7 +5,7 @@ import java.util.Scanner;
 public class TestClient {
     public static void main(String[] args) {
     	Scanner sc = new Scanner(System.in);
-        clients client1 = new clients();
+        clients client1 = new clients("User1", "localhost", 5555);
 
         // Crear los clientes
         client1.createClient();

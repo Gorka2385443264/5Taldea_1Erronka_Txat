@@ -1,0 +1,59 @@
+private synchronized void cargarMensajes(DataOutputStream out) {
+        try {
+            File file = new File(MESSAGE_FILE);
+
+            if (!file.exists() || file.length() == 0) {
+                out.writeUTF("No hay mensajes previos en el historial.");
+                return;
+            }
+
+            // Leer el contenido del archivo
+            String content = new String(Files.readAllBytes(file.toPath()));
+
+            // Eliminar los corchetes y dividir los mensajes
+            String[] messages = content.substring(1, content.length() - 1).split("(?<=\\}),");
+
+            for (String msg : messages) {
+                // Parsear manualmente el cliente y el mensaje
+                String client = msg.split("\"client\":\"")[1].split("\",")[0];
+                String message = msg.split("\"message\":\"")[1].split("\"")[0];
+
+                // Enviar el mensaje al cliente
+                out.writeUTF(client + " > " + message);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private synchronized void guardarMensaje(String clientName, String message) {
+        try {
+            File file = new File(MESSAGE_FILE);
+            StringBuilder jsonContent = new StringBuilder();
+
+            if (file.exists() && file.length() > 0) {
+                // Leer el contenido existente del archivo
+                String content = new String(Files.readAllBytes(file.toPath()));
+
+                // Eliminar el corchete final
+                jsonContent.append(content.substring(0, content.length() - 1));
+                if (jsonContent.length() > 1) {
+                    jsonContent.append(",");
+                }
+            } else {
+                // Si el archivo no existe, comenzar con un corchete de apertura
+                jsonContent.append("[");
+            }
+
+            // Agregar el nuevo mensaje en formato JSON
+            jsonContent.append(String.format("{\"client\":\"%s\",\"message\":\"%s\"}", clientName, message));
+            jsonContent.append("]");
+
+            // Escribir el contenido actualizado en el archivo
+            try (FileWriter writer = new FileWriter(file)) {
+                writer.write(jsonContent.toString());
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }

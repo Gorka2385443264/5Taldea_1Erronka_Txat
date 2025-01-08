@@ -11,45 +11,69 @@ public class clients {
     private DataOutputStream out;
     private Socket socket;
 
-    public int portNumber = 5555;
+    private String serverHost = "localhost";
+    private int portNumber = 5555;
+    private String clientName;
+
+    public clients(String clientName, String serverHost, int portNumber) {
+        this.clientName = clientName;
+        this.serverHost = serverHost;
+        this.portNumber = portNumber;
+    }
 
     public void createClient() {
+        while (true) {
+            try {
+                connectToServer();
+                break; // Salir del bucle si la conexión es exitosa
+            } catch (IOException e) {
+                System.out.println("CLIENT > Unable to connect to server. Retrying in 5 seconds...");
+                try {
+                    Thread.sleep(5000);
+                } catch (InterruptedException ex) {
+                    ex.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void connectToServer() throws IOException {
+        // Conectar al servidor
+        socket = new Socket(serverHost, portNumber);
+        System.out.println("CLIENT > Connected to server on port " + portNumber);
+
+        // Configurar streams de entrada y salida
+        in = new DataInputStream(socket.getInputStream());
+        out = new DataOutputStream(socket.getOutputStream());
+
+        // Enviar el nombre del cliente al servidor
+        sendMessage("CLIENT_NAME:" + clientName);
+
+        // Hilo para escuchar mensajes del servidor
+        new Thread(this::listenToServer).start();
+
+        // Hilo para enviar mensajes al servidor
+        new Thread(this::sendMessages).start();
+    }
+
+    private void listenToServer() {
         try {
-            // Conectarse al servidor
-            socket = new Socket("localhost", portNumber);
-            System.out.println("CLIENT > Connected to server on port " + portNumber);
-
-            // Configurar streams de entrada y salida
-            in = new DataInputStream(socket.getInputStream());
-            out = new DataOutputStream(socket.getOutputStream());
-
-            // Hilo para escuchar mensajes del servidor
-            new Thread(() -> {
-                while (!socket.isClosed()) {
-                    try {
-                        if (in.available() > 0) {
-                            String input = in.readUTF();
-                            System.out.println("SERVER > " + input);
-                        }
-                    } catch (IOException e) {
-                        System.out.println("CLIENT > Connection lost");
-                        closeConnection();
-                    }
-                }
-            }).start();
-
-            // Hilo para enviar mensajes al servidor
-            new Thread(() -> {
-                Scanner scanner = new Scanner(System.in);
-                while (!socket.isClosed()) {
-                    String message = scanner.nextLine();
-                    sendMessage(message);
-                }
-                scanner.close();
-            }).start();
-
+            while (!socket.isClosed()) {
+                String input = in.readUTF();
+                System.out.println("SERVER > " + input);
+            }
         } catch (IOException e) {
-            e.printStackTrace();
+            System.out.println("CLIENT > Connection lost");
+            closeConnection();
+        }
+    }
+
+    private void sendMessages() {
+        try (Scanner scanner = new Scanner(System.in)) {
+            while (!socket.isClosed()) {
+                String message = scanner.nextLine();
+                sendMessage(message);
+            }
         }
     }
 
