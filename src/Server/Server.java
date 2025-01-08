@@ -20,14 +20,16 @@ public class Server {
         clients = new ArrayList<ClientThread>();
         try {
             ServerSocket serverSocket = new ServerSocket(port);
-            System.out.println("SERVER ON");
+            System.out.println("SERVER ON\nPORT:"+port);
             System.out.println("SERVER > Waiting for connections...");
 
             while (true) {
                 try {
+                	int num = 0;
                     Socket socket = serverSocket.accept();
                     System.out.println("SERVER > New connection: " + socket.getRemoteSocketAddress());
-                    ClientThread client = new ClientThread(this, socket);
+                    ClientThread client = new ClientThread(this, socket,String.valueOf(num));
+                    num++;
                     Thread thread = new Thread(client);
                     thread.start();
                     clients.add(client);
