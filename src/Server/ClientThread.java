@@ -29,7 +29,7 @@ public class ClientThread implements Runnable {
     public void run() {
         try {
             // Cargar mensajes previos cuando un cliente se conecta
-        	String izena = "PEPE";
+        	String izena = "USUARIO";
             cargarMensajes();
 
             while (!socket.isClosed()) {

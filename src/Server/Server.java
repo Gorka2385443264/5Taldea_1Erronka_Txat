@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Server {
-    int portNumber = 5555;
+    int portNumber = 5556;
     private Socket socket;
     private List<ClientThread> clientThreads = new ArrayList<>();
 
