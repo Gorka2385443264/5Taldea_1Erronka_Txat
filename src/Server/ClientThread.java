@@ -8,11 +8,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class ClientThread implements Runnable {
     private static final String MESSAGES_FILE = "messages.json";
+    private Lock lock = new ReentrantLock(); // Lock para manejar acceso concurrente al archivo JSON
     private Socket socket;
     private List<ClientThread> clientThreads;
     private BufferedReader in;
     private PrintWriter out;
-    private Lock lock = new ReentrantLock(); // Lock para manejar acceso concurrente al archivo JSON
 
     public ClientThread(Socket socket, List<ClientThread> clientThreads) {
         this.socket = socket;
@@ -29,21 +29,20 @@ public class ClientThread implements Runnable {
     public void run() {
         try {
             // Cargar mensajes previos cuando un cliente se conecta
-        	String izena = "USUARIO";
             cargarMensajes();
 
             while (!socket.isClosed()) {
                 String message = in.readLine();  // Leer mensaje en texto plano
                 if (message != null && !message.trim().isEmpty()) {
-                    System.out.println("SERVER > Received from "+izena+": " + message);
+                    System.out.println(message);
 
                     // Guardar el mensaje en el archivo JSON
-                    guardarMensaje(message, izena);
+                    guardarMensaje(message);
 
                     // Enviar el mensaje a todos los clientes conectados
                     for (ClientThread client : clientThreads) {
                         if (client != this) {
-                            client.sendMessage(message, izena);
+                            client.sendMessage(message);
                         }
                     }
                 }
@@ -55,8 +54,8 @@ public class ClientThread implements Runnable {
         }
     }
 
-    public void sendMessage(String message, String izena) {
-        out.println(izena+ ">" + message);  // Enviar mensaje en texto plano
+    public void sendMessage(String message) {
+        out.println(message);  // Enviar mensaje en texto plano
     }
 
     private void closeConnection() {
@@ -64,6 +63,7 @@ public class ClientThread implements Runnable {
             if (in != null) in.close();
             if (out != null) out.close();
             if (socket != null && !socket.isClosed()) socket.close();
+            System.out.println("Conexion cerrada...");
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -109,8 +109,11 @@ public class ClientThread implements Runnable {
     }
 
     // Método para guardar el mensaje en el archivo JSON
-    private synchronized void guardarMensaje(String message, String izena) {
-        lock.lock();  // Asegurar acceso exclusivo al archivo JSON
+    private synchronized void guardarMensaje(String message) {
+    	String[] parts = message.split(">");
+    	message = parts[1];
+    	String izena = parts[0];
+    	lock.lock();  // Asegurar acceso exclusivo al archivo JSON
         try {
             File file = new File(MESSAGES_FILE);
             StringBuilder jsonContent = new StringBuilder();
@@ -123,20 +126,15 @@ public class ClientThread implements Runnable {
                         jsonContent.append(line);
                     }
                 }
-
-                // Eliminar el corchete final y preparar para agregar el nuevo mensaje
-                jsonContent.deleteCharAt(jsonContent.length() - 1); // Eliminar el "]"
+                jsonContent.deleteCharAt(jsonContent.length() - 1);
                 jsonContent.append(",");
             } else {
-                // Si el archivo no existe, comenzar con un corchete de apertura
                 jsonContent.append("[");
             }
 
-            // Agregar el nuevo mensaje en formato JSON
             jsonContent.append(String.format("{\"client\":\"%s\",\"message\":\"%s\"}", izena, message));
             jsonContent.append("]");
 
-            // Escribir el contenido actualizado en el archivo
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
                 writer.write(jsonContent.toString());
             }
@@ -144,7 +142,7 @@ public class ClientThread implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         } finally {
-            lock.unlock();  // Liberar el lock después de acceder al archivo
+            lock.unlock();
         }
     }
 }

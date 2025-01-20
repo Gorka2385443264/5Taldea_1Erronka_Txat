@@ -9,12 +9,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Server {
-    int portNumber = 5556;
+    int portNumber = 5555;
     private Socket socket;
     private List<ClientThread> clientThreads = new ArrayList<>();
 
-    public List<ClientThread> getClients() {
-        return clientThreads;
+    public static void main(String[] args) {
+        Server server = new Server();
+        server.startServer();
     }
 
     public void startServer() {
@@ -36,8 +37,7 @@ public class Server {
         }
     }
 
-    public static void main(String[] args) {
-        Server server = new Server();
-        server.startServer();
+    public List<ClientThread> getClients() {
+        return clientThreads;
     }
 }

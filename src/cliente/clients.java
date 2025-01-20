@@ -12,7 +12,7 @@ public class clients {
     private Socket socket;
 
     private String serverHost = "localhost";
-    private int portNumber = 5556;
+    private int portNumber = 5555;
     private String clientName;
 
     public clients(String clientName, String serverHost, int portNumber) {
