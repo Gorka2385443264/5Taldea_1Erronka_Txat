@@ -40,9 +40,11 @@ public class ClientThread implements Runnable {
                     guardarMensaje(message);
 
                     // Enviar el mensaje a todos los clientes conectados
-                    for (ClientThread client : clientThreads) {
-                        if (client != this) {
-                            client.sendMessage(message);
+                    synchronized(clientThreads) {
+                        for (ClientThread client : clientThreads) {
+                            if (client != this) {
+                                client.sendMessage(message);
+                            }
                         }
                     }
                 }
@@ -51,11 +53,10 @@ public class ClientThread implements Runnable {
             e.printStackTrace();
         } finally {
             closeConnection();
+            synchronized(clientThreads) {
+                clientThreads.remove(this);
+            }
         }
-    }
-
-    public void sendMessage(String message) {
-        out.println(message);  // Enviar mensaje en texto plano
     }
 
     private void closeConnection() {
@@ -67,6 +68,10 @@ public class ClientThread implements Runnable {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void sendMessage(String message) {
+        out.println(message);  // Enviar mensaje en texto plano
     }
 
     // Método para cargar los mensajes previos desde el archivo JSON
