@@ -92,20 +92,13 @@ public class ClientThread implements Runnable {
                     content.append(line);
                 }
 
-                // Procesar el JSON (eliminar corchetes y procesar los mensajes)
-                String contentString = content.toString();
-                if (contentString.length() > 2) {
-                    // Quitar los corchetes y dividir los mensajes
-                    String[] messages = contentString.substring(1, contentString.length() - 1).split("(?<=\\}),");
-
-                    for (String msg : messages) {
-                        // Parsear manualmente el cliente y el mensaje
-                        String client = msg.split("\"client\":\"")[1].split("\",")[0];
-                        String message = msg.split("\"message\":\"")[1].split("\"")[0];
+                    while (true) {
+                        String client = line.split("\"client\":\"")[1].split("\",")[0];
+                        String message = "";
 
                         if (message.contains(">")) {
                             // Es un archivo
-                            String[] fileParts = message.split(">", 2); // nombreArchivo > binario
+                            String[] fileParts = message.split(">", 2);
                             if (fileParts.length == 2) {
                                 String fileName = fileParts[0];
                                 String fileContent = fileParts[1];
@@ -132,7 +125,6 @@ public class ClientThread implements Runnable {
         String izena = parts[0];
         String mensajeRestante = parts[1];
 
-        lock.lock();  // Asegurar acceso exclusivo al archivo JSON
         try {
             File file = new File(MESSAGES_FILE);
             StringBuilder jsonContent = new StringBuilder();
@@ -146,26 +138,7 @@ public class ClientThread implements Runnable {
                     }
                 }
                 jsonContent.deleteCharAt(jsonContent.length() - 1); // Quita el último ']'
-                jsonContent.append(",");
-            } else {
-                jsonContent.append("[");
             }
-
-            // Verificar si es un archivo
-            if (mensajeRestante.startsWith("FILE>")) {
-                String[] fileParts = mensajeRestante.split(">", 3); // FILE>nombreArchivo>contenido
-                if (fileParts.length == 3) {
-                    String archivoYContenido = fileParts[1] + ">" + fileParts[2]; // "flags.png>contenido"
-                    jsonContent.append(String.format("{\"client\":\"%s\",\"message\":\"%s\"}", izena, archivoYContenido));
-                } else {
-                    System.err.println("Formato de mensaje de archivo incorrecto.");
-                }
-            } else {
-                // Mensaje normal
-                jsonContent.append(String.format("{\"client\":\"%s\",\"message\":\"%s\"}", izena, mensajeRestante));
-            }
-
-            jsonContent.append("]");
 
             try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
                 writer.write(jsonContent.toString());
